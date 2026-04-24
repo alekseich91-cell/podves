@@ -1,4 +1,4 @@
-import { anchorPosition } from "../physics/geometry.js";
+import { anchorPosition, segmentLength } from "../physics/geometry.js";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
@@ -60,6 +60,27 @@ function _renderSegments(project, toPx, selection) {
       "data-id": seg.id, "data-kind": "segment",
       style: "cursor: pointer;"
     }));
+    // Length label at midpoint, slightly offset perpendicular to the segment
+    const L = segmentLength(project.grid, seg.id);
+    const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+    const dx = b.x - a.x, dy = b.y - a.y;
+    const plen = Math.hypot(dx, dy) || 1;
+    const nx = -dy / plen, ny = dx / plen;
+    const offset = 14;
+    const lx = mx + nx * offset, ly = my + ny * offset;
+    const bg = el("rect", {
+      x: lx - 24, y: ly - 10, width: 48, height: 16,
+      fill: "white", stroke: "#ccc", "stroke-width": 1,
+      rx: 2, "pointer-events": "none"
+    });
+    g.appendChild(bg);
+    const t = el("text", {
+      x: lx, y: ly + 3,
+      "font-size": 11, "text-anchor": "middle",
+      fill: "#333", "pointer-events": "none"
+    });
+    t.textContent = `${L.toFixed(1)} м`;
+    g.appendChild(t);
   }
   return g;
 }
@@ -90,20 +111,29 @@ function _renderFixtures(project, toPx, selection) {
     const type = project.grid.fixtureTypes.find(t => t.id === fx.typeId);
     const isSelected = selection?.kind === "fixture" && selection.id === fx.id;
     g.appendChild(el("circle", {
-      cx: pos.x, cy: pos.y, r: 4,
+      cx: pos.x, cy: pos.y, r: 7,
       fill: "#f5a623",
-      stroke: isSelected ? "#0077cc" : "white",
+      stroke: isSelected ? "#0077cc" : "#333",
       "stroke-width": 2,
       "data-id": fx.id, "data-kind": "fixture",
       style: "cursor: move;"
     }));
     if (type) {
-      const label = el("text", {
-        x: pos.x + 8, y: pos.y + 4,
-        "font-size": 10, fill: "#333",
-        "pointer-events": "none"
+      const text = `${type.name} ${type.weight}кг`;
+      const approxWidth = text.length * 6 + 10;
+      const labelY = pos.y - 22;
+      const bg = el("rect", {
+        x: pos.x - approxWidth / 2, y: labelY - 10, width: approxWidth, height: 14,
+        fill: "#fff4e5", stroke: "#f5a623", "stroke-width": 1,
+        rx: 2, "pointer-events": "none"
       });
-      label.textContent = `${type.name} ${type.weight}кг`;
+      g.appendChild(bg);
+      const label = el("text", {
+        x: pos.x, y: labelY,
+        "font-size": 10, "text-anchor": "middle",
+        fill: "#333", "pointer-events": "none"
+      });
+      label.textContent = text;
       g.appendChild(label);
     }
   }

@@ -9,18 +9,32 @@ export function compute(project) {
   const lever = {};
   for (const hp of g.hangPoints) lever[hp.id] = 0;
 
+  let zeroSupportCount = 0;
+  let singleSupportCount = 0;
+
   for (const seg of g.segments) {
     const R = computeSegmentReactions(g, seg.id);
     if (Object.keys(R).length === 0) {
-      warnings.push(`Сегмент ${seg.id}: без опор — расчёт пропущен`);
+      zeroSupportCount++;
       continue;
     }
     if (Object.keys(R).length === 1) {
-      warnings.push(`Сегмент ${seg.id}: единственная опора — вся масса на неё`);
+      singleSupportCount++;
     }
     for (const [hpId, r] of Object.entries(R)) {
       lever[hpId] = (lever[hpId] ?? 0) + r;
     }
+  }
+
+  if (zeroSupportCount === 1) {
+    warnings.push("Одна ферма без точек подвеса — добавь минимум 2 точки, чтобы рассчитать нагрузку.");
+  } else if (zeroSupportCount > 1) {
+    warnings.push(`${zeroSupportCount} ферм без точек подвеса — добавь минимум 2 точки на каждую.`);
+  }
+  if (singleSupportCount === 1) {
+    warnings.push("Одна ферма держится на единственной точке — вся её масса уходит в эту точку.");
+  } else if (singleSupportCount > 1) {
+    warnings.push(`${singleSupportCount} ферм держатся на одной точке каждая — опасно, добавь вторую точку.`);
   }
 
   for (const mt of g.motors) {

@@ -37,11 +37,35 @@ const store = createStore({
   selection: null
 });
 
+function deleteSelected() {
+  const s = store.get();
+  if (!s.selection) return;
+  store.set(prev => {
+    let grid = prev.project.grid;
+    const { kind, id } = s.selection;
+    if (kind === "node")           grid = removeNode(grid, id);
+    else if (kind === "segment")   grid = removeSegment(grid, id);
+    else if (kind === "hangPoint") grid = removeHangPoint(grid, id);
+    else if (kind === "fixture")   grid = removeFixture(grid, id);
+    else if (kind === "motor")     grid = removeMotor(grid, id);
+    return {
+      ...prev,
+      project: { ...prev.project, grid, updatedAt: new Date().toISOString() },
+      selection: null
+    };
+  });
+}
+
 function render() {
   const { project, tool, selection } = store.get();
   const report = compute(project);
   renderEditor(svg, project, report, selection, view);
-  renderToolPanel(toolsHost, tool, next => store.set(s => ({ ...s, tool: next })));
+  renderToolPanel(
+    toolsHost,
+    tool,
+    next => store.set(s => ({ ...s, tool: next })),
+    deleteSelected
+  );
   renderPalette(paletteHost, project, tool, patch => {
     store.set(s => ({
       ...s,
@@ -121,20 +145,7 @@ window.addEventListener("keydown", (e) => {
   const s = store.get();
   if (!s.selection) return;
   e.preventDefault();
-  store.set(prev => {
-    let grid = prev.project.grid;
-    const { kind, id } = s.selection;
-    if (kind === "node")           grid = removeNode(grid, id);
-    else if (kind === "segment")   grid = removeSegment(grid, id);
-    else if (kind === "hangPoint") grid = removeHangPoint(grid, id);
-    else if (kind === "fixture")   grid = removeFixture(grid, id);
-    else if (kind === "motor")     grid = removeMotor(grid, id);
-    return {
-      ...prev,
-      project: { ...prev.project, grid, updatedAt: new Date().toISOString() },
-      selection: null
-    };
-  });
+  deleteSelected();
 });
 
 // Restore active project on startup
