@@ -25,6 +25,11 @@ export function renderSummary(host, project, report, onBulkMaxLoad) {
   title.textContent = "Нагрузки";
   host.appendChild(title);
 
+  const legend = document.createElement("p");
+  legend.textContent = "Рычаг — штатная нагрузка. Worst — «если сосед откажет». Цвет и % — по worst (запас безопасности).";
+  legend.style.cssText = "font-size:11px;color:#666;margin:4px 0 8px;";
+  host.appendChild(legend);
+
   // Bulk limit control — applies to all hang points
   if (project.grid.hangPoints.length > 0) {
     const bulk = document.createElement("div");

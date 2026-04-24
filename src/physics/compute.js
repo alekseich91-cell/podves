@@ -145,7 +145,9 @@ export function compute(project) {
   const pointLoads = g.hangPoints.map(hp => {
     const leverKg = lever[hp.id] ?? 0;
     const worstKg = worst[hp.id] ?? leverKg;
-    const ratio = hp.maxLoad > 0 ? leverKg / hp.maxLoad : Infinity;
+    // Safety status is driven by worst-case vs. limit, not lever.
+    // If the worst case exceeds the point's rating, that's a hard "no-go".
+    const ratio = hp.maxLoad > 0 ? worstKg / hp.maxLoad : Infinity;
     let status = "ok";
     if (ratio > 1) status = "over";
     else if (ratio >= 0.7) status = "warn";

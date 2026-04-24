@@ -1,5 +1,6 @@
 import { newNode, newSegment, newHangPoint, newMotor, newFixture } from "../model/defaults.js";
 import { addNode, addSegment, addHangPoint, addMotor, addFixture } from "../model/mutations.js";
+import { repairGrid } from "../model/repair.js";
 
 const DEFAULT_WEIGHT_PER_METER = 3;
 const DEFAULT_MAX_LOAD = 500;
@@ -93,6 +94,12 @@ export function handleCanvasClick(project, tool, world, clickedEntity, scale) {
         selection = { kind: "motor", id: mt.id };
       }
     }
+  }
+
+  // Auto-repair geometric disconnections (coincident nodes, nodes lying on
+  // segments) so drawing feels natural and physics treats the grid as one.
+  if (p !== project) {
+    p = { ...p, grid: repairGrid(p.grid) };
   }
   return { project: p, tool: t, selection };
 }

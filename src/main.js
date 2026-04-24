@@ -6,6 +6,7 @@ import { renderToolPanel } from "./editor/tools_ui.js";
 import { compute } from "./physics/compute.js";
 import { createStore } from "./state.js";
 import { moveNode, moveHangPoint, moveFixture } from "./model/mutations_drag.js";
+import { repairGrid } from "./model/repair.js";
 import { renderPalette } from "./sidebar/palette.js";
 import { renderInspector } from "./sidebar/inspector.js";
 import { renderSummary } from "./sidebar/summary.js";
@@ -116,7 +117,7 @@ function render() {
   });
   renderToolbar(toolbarHost, { project, view, totals: report.totals }, {
     onNew:   () => store.replace({ project: newProject("Без названия"), tool: { kind: "select" }, selection: null }),
-    onLoad:  (p) => store.replace({ project: p, tool: { kind: "select" }, selection: null }),
+    onLoad:  (p) => store.replace({ project: { ...p, grid: repairGrid(p.grid) }, tool: { kind: "select" }, selection: null }),
     onUndo:  () => store.undo(),
     onRedo:  () => store.redo(),
     onToggleSnap: () => { view.snap = !view.snap; render(); },
@@ -152,7 +153,13 @@ installDrag(svg, () => view,
       return { ...s, project: { ...s.project, grid, updatedAt: new Date().toISOString() } };
     });
   },
-  () => {}
+  () => {
+    // When drag ends, repair geometry in case dragging created coincident nodes.
+    store.set(s => ({
+      ...s,
+      project: { ...s.project, grid: repairGrid(s.project.grid), updatedAt: new Date().toISOString() }
+    }));
+  }
 );
 
 render();
@@ -187,11 +194,16 @@ window.addEventListener("keydown", (e) => {
   deleteSelected();
 });
 
-// Restore active project on startup
+// Restore active project on startup (with automatic repair of any pre-existing
+// geometric disconnections — covers projects saved before repair was introduced).
 if (typeof localStorage !== "undefined") {
   const id = getActiveProjectId(localStorage);
   if (id) {
     const p = loadProjectFromStorage(localStorage, id);
-    if (p) store.replace({ project: p, tool: { kind: "select" }, selection: null });
+    if (p) store.replace({
+      project: { ...p, grid: repairGrid(p.grid) },
+      tool: { kind: "select" },
+      selection: null
+    });
   }
 }
