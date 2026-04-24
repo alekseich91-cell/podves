@@ -13,12 +13,43 @@ function th(text, align) {
   return c;
 }
 
-export function renderSummary(host, project, report) {
+function parseNumeric(s) {
+  const n = parseFloat(String(s ?? "").replace(",", ".").trim());
+  return Number.isFinite(n) ? n : 0;
+}
+
+export function renderSummary(host, project, report, onBulkMaxLoad) {
   while (host.firstChild) host.removeChild(host.firstChild);
 
   const title = document.createElement("h3");
   title.textContent = "Нагрузки";
   host.appendChild(title);
+
+  // Bulk limit control — applies to all hang points
+  if (project.grid.hangPoints.length > 0) {
+    const bulk = document.createElement("div");
+    bulk.style.cssText = "display:flex;gap:6px;align-items:center;margin:6px 0 10px;font-size:12px;";
+    const label = document.createElement("span");
+    label.textContent = "Лимит всех точек:";
+    const inp = document.createElement("input");
+    inp.type = "text";
+    inp.inputMode = "decimal";
+    inp.placeholder = "500";
+    inp.style.cssText = "width:70px;text-align:right;";
+    inp.dataset.focusKey = "summary-bulk-max";
+    const btn = document.createElement("button");
+    btn.textContent = "Применить";
+    btn.addEventListener("click", () => {
+      const v = parseNumeric(inp.value);
+      if (v > 0) onBulkMaxLoad(v);
+    });
+    bulk.appendChild(label);
+    bulk.appendChild(inp);
+    const kg = document.createElement("span"); kg.textContent = "кг";
+    bulk.appendChild(kg);
+    bulk.appendChild(btn);
+    host.appendChild(bulk);
+  }
 
   if (report.pointLoads.length === 0) {
     const p = document.createElement("p");

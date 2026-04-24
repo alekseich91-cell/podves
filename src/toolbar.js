@@ -16,6 +16,7 @@ export function renderToolbar(host, ctx, cb) {
 
   const nameInput = document.createElement("input");
   nameInput.value = ctx.project.name;
+  nameInput.dataset.focusKey = "toolbar-project-name";
   nameInput.style.cssText =
     "background:transparent;color:#eee;border:none;border-bottom:1px solid #555;font-size:14px;width:180px;";
   nameInput.addEventListener("change", () => cb.onRenameProject(nameInput.value));

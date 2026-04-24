@@ -56,7 +56,32 @@ function deleteSelected() {
   });
 }
 
+function captureFocus() {
+  const el = document.activeElement;
+  if (!(el instanceof HTMLInputElement)) return null;
+  const key = el.dataset?.focusKey;
+  if (!key) return null;
+  return {
+    key,
+    selStart: el.selectionStart,
+    selEnd: el.selectionEnd
+  };
+}
+
+function restoreFocus(snap) {
+  if (!snap) return;
+  const next = document.querySelector(`input[data-focus-key="${CSS.escape(snap.key)}"]`);
+  if (!(next instanceof HTMLInputElement)) return;
+  next.focus();
+  try {
+    if (snap.selStart != null && snap.selEnd != null) {
+      next.setSelectionRange(snap.selStart, snap.selEnd);
+    }
+  } catch { /* some inputs don't support setSelectionRange */ }
+}
+
 function render() {
+  const focusSnap = captureFocus();
   const { project, tool, selection } = store.get();
   const report = compute(project);
   renderEditor(svg, project, report, selection, view);
@@ -76,7 +101,19 @@ function render() {
   renderInspector(inspectorHost, project, selection, updater =>
     store.set(s => ({ ...s, project: updater(s.project) }))
   );
-  renderSummary(summaryHost, project, report);
+  renderSummary(summaryHost, project, report, (newMax) => {
+    store.set(s => ({
+      ...s,
+      project: {
+        ...s.project,
+        updatedAt: new Date().toISOString(),
+        grid: {
+          ...s.project.grid,
+          hangPoints: s.project.grid.hangPoints.map(hp => ({ ...hp, maxLoad: newMax }))
+        }
+      }
+    }));
+  });
   renderToolbar(toolbarHost, { project, view, totals: report.totals }, {
     onNew:   () => store.replace({ project: newProject("Без названия"), tool: { kind: "select" }, selection: null }),
     onLoad:  (p) => store.replace({ project: p, tool: { kind: "select" }, selection: null }),
@@ -85,6 +122,8 @@ function render() {
     onToggleSnap: () => { view.snap = !view.snap; render(); },
     onRenameProject: (name) => store.set(s => ({ ...s, project: { ...s.project, name, updatedAt: new Date().toISOString() } }))
   });
+
+  restoreFocus(focusSnap);
 }
 
 store.subscribe(render);

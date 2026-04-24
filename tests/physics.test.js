@@ -195,3 +195,66 @@ test("compute: over-limit point gets status=over", () => {
   const report = compute(project);
   for (const p of report.pointLoads) assert.equal(p.status, "over");
 });
+
+test("compute: orphan segment transfers weight through shared node (T-junction)", () => {
+  // Horizontal truss 10m, 3kg/m, with hang points at both ends (supported).
+  // Vertical truss 4m, 3kg/m, attached mid-way to horizontal's midpoint. No hang points.
+  // Expected: vertical's 12kg transfers to horizontal at midpoint, split among 2 hang points equally.
+  let g = emptyGrid();
+  const hA = newNode({ x: 0, y: 0 });
+  const hM = newNode({ x: 5, y: 0 });  // mid horizontal, shared with vertical
+  const hB = newNode({ x: 10, y: 0 });
+  const vBot = newNode({ x: 5, y: 4 });
+  g = addNode(g, hA); g = addNode(g, hM); g = addNode(g, hB); g = addNode(g, vBot);
+
+  // Horizontal split into two supported segments (so hM is a shared node)
+  const h1 = newSegment(hA.id, hM.id, 3);
+  const h2 = newSegment(hM.id, hB.id, 3);
+  const vert = newSegment(hM.id, vBot.id, 3);
+  g = addSegment(g, h1); g = addSegment(g, h2); g = addSegment(g, vert);
+
+  const hpA = newHangPoint({ kind: "node", nodeId: hA.id }, 500);
+  const hpB = newHangPoint({ kind: "node", nodeId: hB.id }, 500);
+  g = addHangPoint(g, hpA); g = addHangPoint(g, hpB);
+
+  const project = {
+    id: "p", name: "n", createdAt: "x", updatedAt: "x",
+    schemaVersion: 1, grid: g
+  };
+  const report = compute(project);
+
+  // Sum of reactions must equal total grid weight
+  const sumR = report.pointLoads.reduce((a, p) => a + p.lever, 0);
+  approx(sumR, report.totals.totalWeight);
+  approx(report.totals.totalWeight, 10 * 3 + 4 * 3);  // 42 kg
+
+  // By symmetry both hang points carry the same load
+  approx(report.pointLoads[0].lever, report.pointLoads[1].lever);
+
+  // No "isolated orphan" warning — vertical is successfully transferred
+  assert.ok(!report.warnings.some(w => /не учтён/i.test(w)));
+});
+
+test("compute: orphan chain — vertical split into 3 tiny segments still transfers fully", () => {
+  let g = emptyGrid();
+  const hA = newNode({ x: 0, y: 0 });
+  const hM = newNode({ x: 5, y: 0 });
+  const hB = newNode({ x: 10, y: 0 });
+  const v1 = newNode({ x: 5, y: 1 });
+  const v2 = newNode({ x: 5, y: 2 });
+  const v3 = newNode({ x: 5, y: 3 });
+  for (const n of [hA, hM, hB, v1, v2, v3]) g = addNode(g, n);
+  g = addSegment(g, newSegment(hA.id, hM.id, 3));
+  g = addSegment(g, newSegment(hM.id, hB.id, 3));
+  g = addSegment(g, newSegment(hM.id, v1.id, 3));
+  g = addSegment(g, newSegment(v1.id, v2.id, 3));
+  g = addSegment(g, newSegment(v2.id, v3.id, 3));
+  const hpA = newHangPoint({ kind: "node", nodeId: hA.id }, 500);
+  const hpB = newHangPoint({ kind: "node", nodeId: hB.id }, 500);
+  g = addHangPoint(g, hpA); g = addHangPoint(g, hpB);
+
+  const project = { id: "p", name: "n", createdAt: "x", updatedAt: "x", schemaVersion: 1, grid: g };
+  const report = compute(project);
+  const sumR = report.pointLoads.reduce((a, p) => a + p.lever, 0);
+  approx(sumR, report.totals.totalWeight);
+});

@@ -5,7 +5,7 @@ import { segmentLength, hangPointPositionsOnSegment } from "./geometry.js";
  * Boundary rule: a fixture exactly at a hang-point distance goes entirely to
  * that hang point (belongs to no span).
  */
-export function computeSegmentReactions(g, segmentId) {
+export function computeSegmentReactions(g, segmentId, extras = []) {
   const seg = g.segments.find(s => s.id === segmentId);
   if (!seg) throw new Error("Unknown segment");
   const L = segmentLength(g, segmentId);
@@ -13,12 +13,15 @@ export function computeSegmentReactions(g, segmentId) {
   const points = hangPointPositionsOnSegment(g, segmentId);
   if (points.length === 0) return {};
 
-  const fixtures = g.fixtures
-    .filter(f => f.segmentId === segmentId)
-    .map(f => {
-      const type = g.fixtureTypes.find(t => t.id === f.typeId);
-      return { distance: f.distance, weight: type ? type.weight : 0 };
-    });
+  const fixtures = [
+    ...g.fixtures
+      .filter(f => f.segmentId === segmentId)
+      .map(f => {
+        const type = g.fixtureTypes.find(t => t.id === f.typeId);
+        return { distance: f.distance, weight: type ? type.weight : 0 };
+      }),
+    ...extras
+  ];
 
   const R = {};
   for (const p of points) R[p.hangPointId] = 0;
