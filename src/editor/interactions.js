@@ -10,7 +10,7 @@ export function pxToWorld(svg, px_x, px_y, v) {
   return { x, y };
 }
 
-export function installViewControls(svg, view, onChange) {
+export function installViewControls(svg, view, onChange, isPanToolActive = () => false) {
   let spaceDown = false;
   let panStart = null;
 
@@ -18,8 +18,12 @@ export function installViewControls(svg, view, onChange) {
   window.addEventListener("keyup",   e => { if (e.code === "Space") spaceDown = false; });
 
   svg.addEventListener("mousedown", e => {
-    if (e.button === 1 || (e.button === 0 && spaceDown)) {
+    const leftBtn = e.button === 0;
+    const middleBtn = e.button === 1;
+    const panWithLeft = leftBtn && (spaceDown || isPanToolActive());
+    if (middleBtn || panWithLeft) {
       panStart = { mx: e.clientX, my: e.clientY, cx: view.center.x, cy: view.center.y };
+      e.stopPropagation();
       e.preventDefault();
     }
   });
@@ -48,10 +52,11 @@ export function installViewControls(svg, view, onChange) {
   window.addEventListener("resize", onChange);
 }
 
-export function installDrag(svg, getView, onDrag, onDragEnd) {
+export function installDrag(svg, getView, onDrag, onDragEnd, isDragDisabled = () => false) {
   let active = null;
   svg.addEventListener("mousedown", e => {
     if (e.button !== 0) return;
+    if (isDragDisabled()) return;
     const t = e.target;
     if (!t.dataset?.kind || !t.dataset?.id) return;
     if (t.dataset.kind === "segment") return;

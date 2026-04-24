@@ -1,5 +1,6 @@
 const BUTTONS = [
   { kind: "select",       icon: "↖", label: "Выбор" },
+  { kind: "pan",          icon: "✋", label: "Ладошка" },
   { kind: "addTruss",     icon: "╱", label: "Ферма" },
   { kind: "addHangPoint", icon: "◉", label: "Подвес" },
   { kind: "addMotor",     icon: "⚙", label: "Лебёдка" }

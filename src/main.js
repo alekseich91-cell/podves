@@ -85,6 +85,7 @@ function render() {
   const focusSnap = captureFocus();
   const { project, tool, selection } = store.get();
   const report = compute(project);
+  svg.style.cursor = tool.kind === "pan" ? "grab" : "default";
   renderEditor(svg, project, report, selection, view);
   renderToolPanel(
     toolsHost,
@@ -128,7 +129,7 @@ function render() {
 }
 
 store.subscribe(render);
-installViewControls(svg, view, render);
+installViewControls(svg, view, render, () => store.get().tool.kind === "pan");
 
 svg.addEventListener("click", (e) => {
   const rect = svg.getBoundingClientRect();
@@ -159,7 +160,8 @@ installDrag(svg, () => view,
       ...s,
       project: { ...s.project, grid: repairGrid(s.project.grid), updatedAt: new Date().toISOString() }
     }));
-  }
+  },
+  () => store.get().tool.kind === "pan"
 );
 
 render();
