@@ -103,19 +103,37 @@ function render() {
   renderInspector(inspectorHost, project, selection, updater =>
     store.set(s => ({ ...s, project: updater(s.project) }))
   );
-  renderSummary(summaryHost, project, report, (newMax) => {
-    store.set(s => ({
-      ...s,
-      project: {
-        ...s.project,
-        updatedAt: new Date().toISOString(),
-        grid: {
-          ...s.project.grid,
-          hangPoints: s.project.grid.hangPoints.map(hp => ({ ...hp, maxLoad: newMax }))
+  renderSummary(
+    summaryHost,
+    project,
+    report,
+    (newMax) => {
+      store.set(s => ({
+        ...s,
+        project: {
+          ...s.project,
+          updatedAt: new Date().toISOString(),
+          grid: {
+            ...s.project.grid,
+            hangPoints: s.project.grid.hangPoints.map(hp => ({ ...hp, maxLoad: newMax }))
+          }
         }
-      }
-    }));
-  });
+      }));
+    },
+    (newWpm) => {
+      store.set(s => ({
+        ...s,
+        project: {
+          ...s.project,
+          updatedAt: new Date().toISOString(),
+          grid: {
+            ...s.project.grid,
+            segments: s.project.grid.segments.map(seg => ({ ...seg, weightPerMeter: newWpm }))
+          }
+        }
+      }));
+    }
+  );
   renderToolbar(toolbarHost, { project, view, totals: report.totals }, {
     onNew:   () => store.replace({ project: newProject("Без названия"), tool: { kind: "select" }, selection: null }),
     onLoad:  (p) => store.replace({ project: { ...p, grid: repairGrid(p.grid) }, tool: { kind: "select" }, selection: null }),

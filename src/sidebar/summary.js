@@ -18,7 +18,32 @@ function parseNumeric(s) {
   return Number.isFinite(n) ? n : 0;
 }
 
-export function renderSummary(host, project, report, onBulkMaxLoad) {
+function _bulkRow({ label, suffix, placeholder, focusKey, onApply }) {
+  const row = document.createElement("div");
+  row.style.cssText = "display:flex;gap:6px;align-items:center;margin:6px 0;font-size:12px;";
+  const lab = document.createElement("span");
+  lab.textContent = label;
+  const inp = document.createElement("input");
+  inp.type = "text";
+  inp.inputMode = "decimal";
+  inp.placeholder = placeholder;
+  inp.style.cssText = "width:70px;text-align:right;";
+  inp.dataset.focusKey = focusKey;
+  const suf = document.createElement("span"); suf.textContent = suffix;
+  const btn = document.createElement("button");
+  btn.textContent = "Применить";
+  btn.addEventListener("click", () => {
+    const v = parseNumeric(inp.value);
+    if (v > 0 && typeof onApply === "function") onApply(v);
+  });
+  row.appendChild(lab);
+  row.appendChild(inp);
+  row.appendChild(suf);
+  row.appendChild(btn);
+  return row;
+}
+
+export function renderSummary(host, project, report, onBulkMaxLoad, onBulkWeightPerMeter) {
   while (host.firstChild) host.removeChild(host.firstChild);
 
   const title = document.createElement("h3");
@@ -32,28 +57,25 @@ export function renderSummary(host, project, report, onBulkMaxLoad) {
 
   // Bulk limit control — applies to all hang points
   if (project.grid.hangPoints.length > 0) {
-    const bulk = document.createElement("div");
-    bulk.style.cssText = "display:flex;gap:6px;align-items:center;margin:6px 0 10px;font-size:12px;";
-    const label = document.createElement("span");
-    label.textContent = "Лимит всех точек:";
-    const inp = document.createElement("input");
-    inp.type = "text";
-    inp.inputMode = "decimal";
-    inp.placeholder = "500";
-    inp.style.cssText = "width:70px;text-align:right;";
-    inp.dataset.focusKey = "summary-bulk-max";
-    const btn = document.createElement("button");
-    btn.textContent = "Применить";
-    btn.addEventListener("click", () => {
-      const v = parseNumeric(inp.value);
-      if (v > 0) onBulkMaxLoad(v);
-    });
-    bulk.appendChild(label);
-    bulk.appendChild(inp);
-    const kg = document.createElement("span"); kg.textContent = "кг";
-    bulk.appendChild(kg);
-    bulk.appendChild(btn);
-    host.appendChild(bulk);
+    host.appendChild(_bulkRow({
+      label: "Лимит всех точек:",
+      suffix: "кг",
+      placeholder: "500",
+      focusKey: "summary-bulk-max",
+      onApply: onBulkMaxLoad
+    }));
+  }
+
+  // Bulk weight-per-meter control — applies to all truss segments
+  if (project.grid.segments.length > 0) {
+    const lastWpm = project.grid.segments[project.grid.segments.length - 1].weightPerMeter;
+    host.appendChild(_bulkRow({
+      label: "Вес метра всех ферм:",
+      suffix: "кг/м",
+      placeholder: String(lastWpm),
+      focusKey: "summary-bulk-wpm",
+      onApply: onBulkWeightPerMeter
+    }));
   }
 
   if (report.pointLoads.length === 0) {

@@ -32,7 +32,45 @@ export function renderEditor(svg, project, report, selection, view) {
   svg.appendChild(_renderSegments(project, worldToPx, selection, isolatedSegs));
   svg.appendChild(_renderFixtures(project, worldToPx, selection));
   svg.appendChild(_renderHangPoints(project, report, worldToPx, selection));
+  svg.appendChild(_renderMotors(project, worldToPx, selection));
   svg.appendChild(_renderNodes(project, worldToPx, selection));
+}
+
+function _renderMotors(project, toPx, selection) {
+  const g = el("g", { "data-layer": "motors" });
+  for (const mt of project.grid.motors) {
+    const hp = project.grid.hangPoints.find(h => h.id === mt.hangPointId);
+    if (!hp) continue;
+    const pos = toPx(anchorPosition(project.grid, hp.anchor));
+    const isSelected = selection?.kind === "motor" && selection.id === mt.id;
+    // Badge sits to the upper-left of the hang point circle so the load labels
+    // (upper-right) don't overlap.
+    const bx = pos.x - 14, by = pos.y - 14;
+    g.appendChild(el("rect", {
+      x: bx - 10, y: by - 8, width: 20, height: 16,
+      rx: 3,
+      fill: "#444",
+      stroke: isSelected ? "#0077cc" : "#222",
+      "stroke-width": 2,
+      "data-id": mt.id, "data-kind": "motor",
+      style: "cursor: pointer;"
+    }));
+    const icon = el("text", {
+      x: bx - 2, y: by + 3,
+      "font-size": 10, fill: "#eee",
+      "text-anchor": "middle", "pointer-events": "none"
+    });
+    icon.textContent = "⚙";
+    g.appendChild(icon);
+    const w = el("text", {
+      x: bx + 12, y: by + 3,
+      "font-size": 9, fill: "#eee",
+      "pointer-events": "none"
+    });
+    w.textContent = `${Math.round(mt.weight)}`;
+    g.appendChild(w);
+  }
+  return g;
 }
 
 function _renderGridBackground(w, h, view) {
