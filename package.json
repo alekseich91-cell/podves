@@ -1,0 +1,10 @@
+{
+  "name": "podves",
+  "version": "0.1.0",
+  "description": "Rigging load calculator",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "test": "node --test 'tests/**/*.test.js'"
+  }
+}
