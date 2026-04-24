@@ -42,7 +42,7 @@ export function renderPalette(host, project, currentTool, onMutate) {
   host.appendChild(title);
 
   const hint = document.createElement("p");
-  hint.textContent = "Клик по строке — активировать штамп. Название и вес редактируются прямо в строке.";
+  hint.textContent = "«Взять» — активировать штамп. Клик по ферме ставит прибор. Название и вес правятся прямо в строке.";
   hint.style.cssText = "font-size:11px;color:#777;margin:4px 0 8px;";
   host.appendChild(hint);
 
@@ -53,8 +53,23 @@ export function renderPalette(host, project, currentTool, onMutate) {
     const row = document.createElement("div");
     const isActive = currentTool?.kind === "addFixture" && currentTool.fixtureTypeId === t.id;
     row.style.cssText =
-      "display:flex;gap:6px;align-items:center;padding:4px;border-radius:4px;cursor:pointer;" +
+      "display:flex;gap:6px;align-items:center;padding:4px;border-radius:4px;" +
       (isActive ? "background:#d0e7ff;" : "background:#fff;border:1px solid #ddd;");
+
+    const pickBtn = document.createElement("button");
+    pickBtn.type = "button";
+    pickBtn.textContent = isActive ? "✓ Активен" : "Взять";
+    pickBtn.title = "Активировать штамп этого типа";
+    pickBtn.style.cssText =
+      "padding:4px 8px;font-size:11px;border-radius:3px;border:1px solid " +
+      (isActive ? "#4a90e2" : "#bbb") + ";" +
+      "background:" + (isActive ? "#4a90e2" : "#fff") + ";" +
+      "color:" + (isActive ? "#fff" : "#333") + ";" +
+      "white-space:nowrap;flex-shrink:0;";
+    pickBtn.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      onMutate({ tool: { kind: "addFixture", fixtureTypeId: t.id } });
+    });
 
     const nameInput = makeTextInput(
       t.name,
@@ -97,12 +112,7 @@ export function renderPalette(host, project, currentTool, onMutate) {
       onMutate({ project: { ...project, grid: removeFixtureType(project.grid, t.id) } });
     });
 
-    // Row click (but not on the inputs themselves) activates the stamp tool.
-    row.addEventListener("click", (ev) => {
-      if (ev.target === nameInput || ev.target === weightInput || ev.target === del) return;
-      onMutate({ tool: { kind: "addFixture", fixtureTypeId: t.id } });
-    });
-
+    row.appendChild(pickBtn);
     row.appendChild(nameInput);
     row.appendChild(weightInput);
     row.appendChild(kgLabel);
