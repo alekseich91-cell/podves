@@ -7,6 +7,7 @@ import {
   addNode, addSegment, addHangPoint, addFixtureType, addFixture
 } from "../src/model/mutations.js";
 import { computeSegmentReactions } from "../src/physics/lever.js";
+import { worstCasePerPoint } from "../src/physics/worstcase.js";
 
 function approx(a, b, eps = 1e-6) {
   assert.ok(Math.abs(a - b) < eps, `${a} !== ${b}`);
@@ -111,4 +112,37 @@ test("invariant: sum of reactions equals total segment load", () => {
   const total = Object.values(R).reduce((a, b) => a + b, 0);
   const expected = 10 * 3 + 15 + 22;
   approx(total, expected);
+});
+
+test("worstCase: 3 points 0/6/12, reactions 9/18/9 → center worst = 18+9, edges = 9+18", () => {
+  let g = emptyGrid();
+  const a = newNode({ x: 0, y: 0 });
+  const b = newNode({ x: 12, y: 0 });
+  g = addNode(g, a); g = addNode(g, b);
+  const s = newSegment(a.id, b.id, 3);
+  g = addSegment(g, s);
+  const hpA = newHangPoint({ kind: "node", nodeId: a.id }, 500);
+  const hpMid = newHangPoint({ kind: "segment", segmentId: s.id, distance: 6 }, 500);
+  const hpB = newHangPoint({ kind: "node", nodeId: b.id }, 500);
+  g = addHangPoint(g, hpA); g = addHangPoint(g, hpMid); g = addHangPoint(g, hpB);
+
+  const R = { [hpA.id]: 9, [hpMid.id]: 18, [hpB.id]: 9 };
+  const W = worstCasePerPoint(g, R);
+  approx(W[hpA.id],   9 + 18);
+  approx(W[hpMid.id], 18 + 9);
+  approx(W[hpB.id],   9 + 18);
+});
+
+test("worstCase: single point → worst === lever (no neighbors)", () => {
+  let g = emptyGrid();
+  const a = newNode({ x: 0, y: 0 });
+  const b = newNode({ x: 10, y: 0 });
+  g = addNode(g, a); g = addNode(g, b);
+  const s = newSegment(a.id, b.id, 3);
+  g = addSegment(g, s);
+  const hp = newHangPoint({ kind: "segment", segmentId: s.id, distance: 5 }, 500);
+  g = addHangPoint(g, hp);
+
+  const W = worstCasePerPoint(g, { [hp.id]: 30 });
+  approx(W[hp.id], 30);
 });
