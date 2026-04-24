@@ -8,6 +8,9 @@ import {
 } from "../src/model/mutations.js";
 import { computeSegmentReactions } from "../src/physics/lever.js";
 import { worstCasePerPoint } from "../src/physics/worstcase.js";
+import { compute } from "../src/physics/compute.js";
+import { newMotor } from "../src/model/defaults.js";
+import { addMotor } from "../src/model/mutations.js";
 
 function approx(a, b, eps = 1e-6) {
   assert.ok(Math.abs(a - b) < eps, `${a} !== ${b}`);
@@ -145,4 +148,50 @@ test("worstCase: single point → worst === lever (no neighbors)", () => {
 
   const W = worstCasePerPoint(g, { [hp.id]: 30 });
   approx(W[hp.id], 30);
+});
+
+test("compute: 10m truss, 2 end points, 1 motor → report shape & sums", () => {
+  const { g: g0, hangPointIds } = straight10m3kgm([0, 10]);
+  let g = addMotor(g0, newMotor(hangPointIds[0], 20));
+  const project = {
+    id: "prj_t", name: "t",
+    createdAt: "2026-01-01T00:00:00Z", updatedAt: "2026-01-01T00:00:00Z",
+    schemaVersion: 1, grid: g
+  };
+  const report = compute(project);
+
+  assert.equal(report.pointLoads.length, 2);
+  const byId = Object.fromEntries(report.pointLoads.map(p => [p.hangPointId, p]));
+  approx(byId[hangPointIds[0]].lever, 15 + 20);
+  approx(byId[hangPointIds[1]].lever, 15);
+  approx(report.totals.trussWeight, 30);
+  approx(report.totals.motorsWeight, 20);
+  approx(report.totals.totalWeight, 50);
+});
+
+test("compute: warning when segment has no hang points", () => {
+  let g = emptyGrid();
+  const a = newNode({ x: 0, y: 0 });
+  const b = newNode({ x: 10, y: 0 });
+  g = addNode(g, a); g = addNode(g, b);
+  g = addSegment(g, newSegment(a.id, b.id, 3));
+  const project = {
+    id: "prj_w", name: "w",
+    createdAt: "2026-01-01T00:00:00Z", updatedAt: "2026-01-01T00:00:00Z",
+    schemaVersion: 1, grid: g
+  };
+  const report = compute(project);
+  assert.ok(report.warnings.length >= 1);
+  assert.ok(report.warnings.some(w => /без опор/i.test(w)));
+});
+
+test("compute: over-limit point gets status=over", () => {
+  const { g: g0 } = straight10m3kgm([0, 10]);
+  const g = { ...g0, hangPoints: g0.hangPoints.map(h => ({ ...h, maxLoad: 10 })) };
+  const project = {
+    id: "prj_o", name: "o", createdAt: "x", updatedAt: "x",
+    schemaVersion: 1, grid: g
+  };
+  const report = compute(project);
+  for (const p of report.pointLoads) assert.equal(p.status, "over");
 });
