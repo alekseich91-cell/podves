@@ -26,6 +26,11 @@ function lastUsedWeightPerMeter(project) {
   return project.grid.segments[project.grid.segments.length - 1].weightPerMeter;
 }
 
+function lastUsedMotorWeight(project) {
+  if (project.grid.motors.length === 0) return DEFAULT_MOTOR_WEIGHT;
+  return project.grid.motors[project.grid.motors.length - 1].weight;
+}
+
 function nearestNode(project, worldXY, scale) {
   const threshold = NODE_SNAP_PX / scale;
   let best = null, bestD = Infinity;
@@ -112,7 +117,7 @@ export function handleCanvasClick(project, tool, world, clickedEntity, scale) {
       if (existing) {
         selection = { kind: "motor", id: existing.id };
       } else {
-        const mt = newMotor(hp.id, DEFAULT_MOTOR_WEIGHT);
+        const mt = newMotor(hp.id, lastUsedMotorWeight(p));
         p = { ...p, grid: addMotor(p.grid, mt) };
         selection = { kind: "motor", id: mt.id };
       }
