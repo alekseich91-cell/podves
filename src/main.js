@@ -6,9 +6,21 @@ import { renderToolPanel } from "./editor/tools_ui.js";
 import { compute } from "./physics/compute.js";
 import { createStore } from "./state.js";
 import { moveNode, moveHangPoint, moveFixture } from "./model/mutations_drag.js";
+import { renderPalette } from "./sidebar/palette.js";
+import { renderInspector } from "./sidebar/inspector.js";
+import { renderSummary } from "./sidebar/summary.js";
 
 const svg = document.getElementById("canvas");
 const toolsHost = document.getElementById("tools");
+const sidebar = document.getElementById("sidebar");
+const paletteHost = document.createElement("div");
+const inspectorHost = document.createElement("div");
+inspectorHost.style.marginTop = "16px";
+const summaryHost = document.createElement("div");
+summaryHost.style.marginTop = "16px";
+sidebar.appendChild(paletteHost);
+sidebar.appendChild(inspectorHost);
+sidebar.appendChild(summaryHost);
 const view = { center: { x: 0, y: 0 }, scale: 40, snap: true, snapStep: 0.1 };
 
 const store = createStore({
@@ -22,6 +34,17 @@ function render() {
   const report = compute(project);
   renderEditor(svg, project, report, selection, view);
   renderToolPanel(toolsHost, tool, next => store.set(s => ({ ...s, tool: next })));
+  renderPalette(paletteHost, project, tool, patch => {
+    store.set(s => ({
+      ...s,
+      project: patch.project ?? s.project,
+      tool:    patch.tool    ?? s.tool
+    }));
+  });
+  renderInspector(inspectorHost, project, selection, updater =>
+    store.set(s => ({ ...s, project: updater(s.project) }))
+  );
+  renderSummary(summaryHost, project, report);
 }
 
 store.subscribe(render);
