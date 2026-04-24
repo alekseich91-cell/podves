@@ -9,9 +9,17 @@ import { moveNode, moveHangPoint, moveFixture } from "./model/mutations_drag.js"
 import { renderPalette } from "./sidebar/palette.js";
 import { renderInspector } from "./sidebar/inspector.js";
 import { renderSummary } from "./sidebar/summary.js";
+import { renderToolbar } from "./toolbar.js";
+import {
+  removeNode, removeSegment, removeHangPoint, removeFixture, removeMotor
+} from "./model/mutations.js";
+import {
+  saveProjectToStorage, setActiveProjectId, getActiveProjectId, loadProjectFromStorage
+} from "./persistence.js";
 
 const svg = document.getElementById("canvas");
 const toolsHost = document.getElementById("tools");
+const toolbarHost = document.getElementById("toolbar");
 const sidebar = document.getElementById("sidebar");
 const paletteHost = document.createElement("div");
 const inspectorHost = document.createElement("div");
@@ -45,6 +53,14 @@ function render() {
     store.set(s => ({ ...s, project: updater(s.project) }))
   );
   renderSummary(summaryHost, project, report);
+  renderToolbar(toolbarHost, { project, view, totals: report.totals }, {
+    onNew:   () => store.replace({ project: newProject("Без названия"), tool: { kind: "select" }, selection: null }),
+    onLoad:  (p) => store.replace({ project: p, tool: { kind: "select" }, selection: null }),
+    onUndo:  () => store.undo(),
+    onRedo:  () => store.redo(),
+    onToggleSnap: () => { view.snap = !view.snap; render(); },
+    onRenameProject: (name) => store.set(s => ({ ...s, project: { ...s.project, name, updatedAt: new Date().toISOString() } }))
+  });
 }
 
 store.subscribe(render);
@@ -77,3 +93,55 @@ installDrag(svg, () => view,
 );
 
 render();
+
+// Ctrl+Z / Ctrl+Shift+Z for undo/redo
+window.addEventListener("keydown", (e) => {
+  if (document.activeElement instanceof HTMLInputElement) return;
+  const mod = e.metaKey || e.ctrlKey;
+  if (mod && e.key.toLowerCase() === "z" && !e.shiftKey) { e.preventDefault(); store.undo(); }
+  else if (mod && e.key.toLowerCase() === "z" && e.shiftKey) { e.preventDefault(); store.redo(); }
+});
+
+// Debounced auto-save
+let saveTimer = null;
+store.subscribe(() => {
+  if (typeof localStorage === "undefined") return;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    const { project } = store.get();
+    saveProjectToStorage(localStorage, project);
+    setActiveProjectId(localStorage, project.id);
+  }, 500);
+});
+
+// Delete / Backspace removes the selected entity
+window.addEventListener("keydown", (e) => {
+  if (e.key !== "Delete" && e.key !== "Backspace") return;
+  if (document.activeElement instanceof HTMLInputElement) return;
+  const s = store.get();
+  if (!s.selection) return;
+  e.preventDefault();
+  store.set(prev => {
+    let grid = prev.project.grid;
+    const { kind, id } = s.selection;
+    if (kind === "node")           grid = removeNode(grid, id);
+    else if (kind === "segment")   grid = removeSegment(grid, id);
+    else if (kind === "hangPoint") grid = removeHangPoint(grid, id);
+    else if (kind === "fixture")   grid = removeFixture(grid, id);
+    else if (kind === "motor")     grid = removeMotor(grid, id);
+    return {
+      ...prev,
+      project: { ...prev.project, grid, updatedAt: new Date().toISOString() },
+      selection: null
+    };
+  });
+});
+
+// Restore active project on startup
+if (typeof localStorage !== "undefined") {
+  const id = getActiveProjectId(localStorage);
+  if (id) {
+    const p = loadProjectFromStorage(localStorage, id);
+    if (p) store.replace({ project: p, tool: { kind: "select" }, selection: null });
+  }
+}
