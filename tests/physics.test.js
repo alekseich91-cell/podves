@@ -182,7 +182,7 @@ test("compute: warning when segment has no hang points", () => {
   };
   const report = compute(project);
   assert.ok(report.warnings.length >= 1);
-  assert.ok(report.warnings.some(w => /без точек подвеса/i.test(w)));
+  assert.ok(report.warnings.some(w => /без связи с опорами/i.test(w)));
 });
 
 test("compute: over-limit point gets status=over", () => {

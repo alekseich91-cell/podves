@@ -107,11 +107,14 @@ function mergeCoincidentNodes(grid, tolerance) {
  * Use this after geometry-changing mutations to fix "visually connected but
  * structurally disconnected" states.
  *
+ * Default tolerance is 0.15 m (15 cm) — larger than the 0.1 m snap step so
+ * off-by-one-click misalignments still get unified.
+ *
  * @param {import("./types.js").Grid} grid
- * @param {number} [tolerance] world units (metres); default 0.05 m = 5 cm
+ * @param {number} [tolerance] world units (metres); default 0.15 m
  * @returns {import("./types.js").Grid}
  */
-export function repairGrid(grid, tolerance = 0.05) {
+export function repairGrid(grid, tolerance = 0.15) {
   let g = mergeCoincidentNodes(grid, tolerance);
 
   // Split loop: one pass can introduce new splits elsewhere, so iterate.

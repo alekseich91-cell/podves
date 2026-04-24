@@ -26,8 +26,10 @@ export function renderEditor(svg, project, report, selection, view) {
     y: (y - view.center.y) * view.scale + height / 2
   });
 
+  const isolatedSegs = new Set(report?.isolatedSegmentIds ?? []);
+
   svg.appendChild(_renderGridBackground(width, height, view));
-  svg.appendChild(_renderSegments(project, worldToPx, selection));
+  svg.appendChild(_renderSegments(project, worldToPx, selection, isolatedSegs));
   svg.appendChild(_renderFixtures(project, worldToPx, selection));
   svg.appendChild(_renderHangPoints(project, report, worldToPx, selection));
   svg.appendChild(_renderNodes(project, worldToPx, selection));
@@ -47,15 +49,19 @@ function _renderGridBackground(w, h, view) {
   return g;
 }
 
-function _renderSegments(project, toPx, selection) {
+function _renderSegments(project, toPx, selection, isolatedSegs) {
   const g = el("g", { "data-layer": "segments" });
   for (const seg of project.grid.segments) {
     const a = toPx(project.grid.nodes.find(n => n.id === seg.fromNodeId).position);
     const b = toPx(project.grid.nodes.find(n => n.id === seg.toNodeId).position);
     const isSelected = selection?.kind === "segment" && selection.id === seg.id;
+    const isIsolated = isolatedSegs?.has(seg.id);
+    let stroke = "#555";
+    if (isSelected) stroke = "#0077cc";
+    else if (isIsolated) stroke = "#e74c3c";
     g.appendChild(el("line", {
       x1: a.x, y1: a.y, x2: b.x, y2: b.y,
-      stroke: isSelected ? "#0077cc" : "#555",
+      stroke,
       "stroke-width": 6, "stroke-linecap": "round",
       "data-id": seg.id, "data-kind": "segment",
       style: "cursor: pointer;"

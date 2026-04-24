@@ -66,7 +66,7 @@ export function compute(project) {
   // anchor or a supported segment). Equal split among exit nodes per component —
   // a practical approximation for typical show-rigging grids.
   const nodeInducedLoads = {};
-  let isolatedOrphanCount = 0;
+  const isolatedSegmentIds = [];
 
   for (const comp of findOrphanComponents(orphan)) {
     let W = 0;
@@ -79,7 +79,7 @@ export function compute(project) {
       if (hasHpHere || onSupportedSeg) exits.push(nid);
     }
     if (exits.length === 0) {
-      isolatedOrphanCount += comp.segs.length;
+      for (const segId of comp.segs) isolatedSegmentIds.push(segId);
       continue;
     }
     const per = W / exits.length;
@@ -88,10 +88,10 @@ export function compute(project) {
     }
   }
 
-  if (isolatedOrphanCount === 1) {
-    warnings.push("Одна ферма без точек подвеса и без связи с опорами — её вес не учтён.");
-  } else if (isolatedOrphanCount > 1) {
-    warnings.push(`${isolatedOrphanCount} ферм без точек подвеса и без связи с опорами — их вес не учтён.`);
+  if (isolatedSegmentIds.length === 1) {
+    warnings.push("Одна ферма без связи с опорами (подсвечена красным) — её вес не учтён.");
+  } else if (isolatedSegmentIds.length > 1) {
+    warnings.push(`${isolatedSegmentIds.length} ферм без связи с опорами (подсвечены красным) — их вес не учтён.`);
   }
 
   // Apply each node-induced load: if a hang point anchors at this node, charge it
@@ -168,6 +168,7 @@ export function compute(project) {
   return {
     pointLoads,
     totals: { trussWeight, fixturesWeight, motorsWeight, totalWeight },
-    warnings
+    warnings,
+    isolatedSegmentIds
   };
 }
