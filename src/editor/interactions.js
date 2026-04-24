@@ -53,23 +53,36 @@ export function installViewControls(svg, view, onChange, isPanToolActive = () =>
 }
 
 export function installDrag(svg, getView, onDrag, onDragEnd, isDragDisabled = () => false) {
+  // Two-stage: `pending` is set on mousedown but doesn't become an active drag
+  // until the mouse actually moves a few pixels. A bare click never fires
+  // onDragEnd, so it doesn't trigger a render between mouseup and the synthetic
+  // click event (which would otherwise land on stale DOM and be dropped).
+  const DRAG_THRESHOLD_PX = 4;
+  let pending = null;
   let active = null;
+
   svg.addEventListener("mousedown", e => {
     if (e.button !== 0) return;
     if (isDragDisabled()) return;
     const t = e.target;
     if (!t.dataset?.kind || !t.dataset?.id) return;
     if (t.dataset.kind === "segment") return;
-    active = { kind: t.dataset.kind, id: t.dataset.id };
-    e.stopPropagation(); e.preventDefault();
+    pending = { kind: t.dataset.kind, id: t.dataset.id, sx: e.clientX, sy: e.clientY };
   });
   window.addEventListener("mousemove", e => {
-    if (!active) return;
-    const rect = svg.getBoundingClientRect();
-    const world = pxToWorld(svg, e.clientX - rect.left, e.clientY - rect.top, getView());
-    onDrag({ ...active, world });
+    if (active) {
+      const rect = svg.getBoundingClientRect();
+      const world = pxToWorld(svg, e.clientX - rect.left, e.clientY - rect.top, getView());
+      onDrag({ ...active, world });
+      return;
+    }
+    if (!pending) return;
+    if (Math.hypot(e.clientX - pending.sx, e.clientY - pending.sy) >= DRAG_THRESHOLD_PX) {
+      active = { kind: pending.kind, id: pending.id };
+    }
   });
   window.addEventListener("mouseup", () => {
     if (active) { active = null; onDragEnd(); }
+    pending = null;
   });
 }
