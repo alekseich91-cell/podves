@@ -64,7 +64,7 @@ podves/
 - **Purity:** every mutation and physics function returns new data. No in-place edits of arguments.
 - **Numbers:** meters (float) and kilograms (float). Never mix units inside the model.
 - **DOM construction:** use `document.createElement` and `textContent`. Never assign to `innerHTML` or `outerHTML` — this is enforced by security tooling and is the safer default.
-- **Tests run with:** `node --test tests/` (Node 20+).
+- **Tests run with:** `node --test` (Node 20+). Node auto-discovers files matching its default test patterns in `tests/`.
 - **Commits:** after each task. Use Conventional Commits (`feat:`, `test:`, `refactor:`, `chore:`).
 
 ---
@@ -111,7 +111,7 @@ Write `/Users/lunia/cld/podves/package.json`:
   "type": "module",
   "private": true,
   "scripts": {
-    "test": "node --test tests/"
+    "test": "node --test"
   }
 }
 ```
