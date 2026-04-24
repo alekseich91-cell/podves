@@ -59,4 +59,9 @@ export function renderToolbar(host, ctx, cb) {
   const v = document.createElement("b"); v.textContent = `${Math.round(ctx.totals.totalWeight)} кг`;
   total.appendChild(l); total.appendChild(v);
   host.appendChild(total);
+
+  const credit = document.createElement("div");
+  credit.textContent = "by Lunia, собрано с помощью нейросети";
+  credit.style.cssText = "font-size:11px;color:#888;margin-left:16px;";
+  host.appendChild(credit);
 }
