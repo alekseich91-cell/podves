@@ -64,11 +64,34 @@ function renderNodes(grid, toSvg) {
   return out;
 }
 
+function strokeFor(status) {
+  if (status === "over") return { color: "#c00", width: 2.5, dash: "" };
+  if (status === "warn") return { color: "#000", width: 1.5, dash: ' stroke-dasharray="3,2"' };
+  return { color: "#000", width: 1.5, dash: "" };
+}
+
+function renderHangPoints(grid, report, toSvg) {
+  const byId = new Map(report.pointLoads.map(pl => [pl.hangPointId, pl]));
+  let out = "";
+  const SIZE = 14;
+  grid.hangPoints.forEach((hp, i) => {
+    const pos = toSvg(anchorPosition(grid, hp.anchor));
+    const pl = byId.get(hp.id);
+    const stroke = strokeFor(pl?.status);
+    const x = pos.x - SIZE / 2;
+    const y = pos.y - SIZE / 2;
+    out += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${SIZE}" height="${SIZE}" fill="#fff" stroke="${stroke.color}" stroke-width="${stroke.width}"${stroke.dash}/>`;
+    out += `<text x="${pos.x.toFixed(1)}" y="${(pos.y + 3.5).toFixed(1)}" font-size="10" font-weight="bold" text-anchor="middle" fill="#000">${i + 1}</text>`;
+  });
+  return out;
+}
+
 export function renderPrintSvg(project, report) {
   const grid = project.grid;
   const { viewBox, toSvg } = computeViewBox(grid);
   let body = "";
   body += renderSegments(grid, toSvg);
   body += renderNodes(grid, toSvg);
+  body += renderHangPoints(grid, report, toSvg);
   return `<svg class="scheme" xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}" preserveAspectRatio="xMidYMid meet">${body}</svg>`;
 }
