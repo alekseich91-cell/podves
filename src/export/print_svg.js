@@ -70,6 +70,37 @@ function strokeFor(status) {
   return { color: "#000", width: 1.5, dash: "" };
 }
 
+export function fixtureTypeLetter(name) {
+  if (!name) return "?";
+  return String(name).trim().charAt(0).toUpperCase() || "?";
+}
+
+function renderMotors(grid, toSvg) {
+  let out = "";
+  for (const mt of grid.motors) {
+    const hp = grid.hangPoints.find(h => h.id === mt.hangPointId);
+    if (!hp) continue;
+    const pos = toSvg(anchorPosition(grid, hp.anchor));
+    const cx = pos.x - 14, cy = pos.y - 14;
+    out += `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="6" fill="#fff" stroke="#000" stroke-width="1.2"/>`;
+    out += `<text x="${cx.toFixed(1)}" y="${(cy + 3).toFixed(1)}" font-size="8" font-weight="bold" text-anchor="middle" fill="#000">M</text>`;
+  }
+  return out;
+}
+
+function renderFixtures(grid, toSvg) {
+  const typeById = new Map(grid.fixtureTypes.map(t => [t.id, t]));
+  let out = "";
+  for (const fx of grid.fixtures) {
+    const pos = toSvg(anchorPosition(grid, { kind: "segment", segmentId: fx.segmentId, distance: fx.distance }));
+    const t = typeById.get(fx.typeId);
+    const letter = fixtureTypeLetter(t?.name);
+    out += `<circle cx="${pos.x.toFixed(1)}" cy="${pos.y.toFixed(1)}" r="4" fill="#000"/>`;
+    out += `<text x="${(pos.x + 6).toFixed(1)}" y="${(pos.y - 5).toFixed(1)}" font-size="9" fill="#000">${letter}</text>`;
+  }
+  return out;
+}
+
 function renderHangPoints(grid, report, toSvg) {
   const byId = new Map(report.pointLoads.map(pl => [pl.hangPointId, pl]));
   let out = "";
@@ -91,7 +122,9 @@ export function renderPrintSvg(project, report) {
   const { viewBox, toSvg } = computeViewBox(grid);
   let body = "";
   body += renderSegments(grid, toSvg);
+  body += renderFixtures(grid, toSvg);
   body += renderNodes(grid, toSvg);
+  body += renderMotors(grid, toSvg);
   body += renderHangPoints(grid, report, toSvg);
   return `<svg class="scheme" xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}" preserveAspectRatio="xMidYMid meet">${body}</svg>`;
 }

@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { newProject, newNode, newSegment, newHangPoint } from "../src/model/defaults.js";
-import { renderPrintSvg } from "../src/export/print_svg.js";
+import { newProject, newNode, newSegment, newHangPoint, newMotor, newFixtureType, newFixture } from "../src/model/defaults.js";
+import { renderPrintSvg, fixtureTypeLetter } from "../src/export/print_svg.js";
 
 const EMPTY_REPORT = {
   pointLoads: [],
@@ -92,4 +92,40 @@ test("renderPrintSvg marks warn hang point with dashed stroke", () => {
   };
   const svg = renderPrintSvg(p, report);
   assert.match(svg, /stroke-dasharray=/);
+});
+
+test("fixtureTypeLetter returns uppercase first character of type name", () => {
+  assert.equal(fixtureTypeLetter("PAR64"), "P");
+  assert.equal(fixtureTypeLetter("движок"), "Д");
+  assert.equal(fixtureTypeLetter(""), "?");
+});
+
+test("renderPrintSvg draws motor marker near its hang point", () => {
+  const p = newProject("t");
+  const n1 = newNode({ x: 0, y: 0 });
+  p.grid.nodes.push(n1);
+  const hp = newHangPoint({ kind: "node", nodeId: n1.id }, 500);
+  p.grid.hangPoints.push(hp);
+  p.grid.motors.push(newMotor(hp.id, 50));
+  const report = {
+    pointLoads: [{ hangPointId: hp.id, lever: 50, worstCase: 50, maxLoad: 500, ratio: 0.1, status: "ok" }],
+    totals: { totalWeight: 50, trussWeight: 0, fixturesWeight: 0, motorsWeight: 50 },
+    warnings: [], isolatedSegmentIds: []
+  };
+  const svg = renderPrintSvg(p, report);
+  assert.match(svg, />M<\/text>/);
+});
+
+test("renderPrintSvg draws fixture with type letter", () => {
+  const p = newProject("t");
+  const n1 = newNode({ x: 0, y: 0 });
+  const n2 = newNode({ x: 10, y: 0 });
+  p.grid.nodes.push(n1, n2);
+  const seg = newSegment(n1.id, n2.id, 5);
+  p.grid.segments.push(seg);
+  const ft = newFixtureType("PAR64", 3);
+  p.grid.fixtureTypes.push(ft);
+  p.grid.fixtures.push(newFixture(ft.id, seg.id, 5));
+  const svg = renderPrintSvg(p, EMPTY_REPORT);
+  assert.match(svg, />P<\/text>/);
 });
