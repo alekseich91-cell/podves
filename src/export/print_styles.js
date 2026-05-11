@@ -22,7 +22,7 @@ body {
 .report-header h1 { margin: 0; font-size: 18px; }
 .report-header .meta { font-size: 11px; color: #444; }
 .report-header .meta span { margin-left: 12px; }
-.scheme { width: 100%; max-height: 55vh; display: block; margin: 0 auto; }
+.scheme { width: 100%; max-height: 72vh; display: block; margin: 0 auto; }
 .report-tables { margin-top: 8px; display: grid; grid-template-columns: 2fr 1fr; gap: 12px; }
 table.points { border-collapse: collapse; width: 100%; font-size: 11px; }
 table.points th, table.points td { border: 1px solid #888; padding: 3px 6px; text-align: left; }
@@ -33,9 +33,6 @@ tr.overloaded td { font-weight: bold; color: #c00; }
 .summary h3 { font-size: 12px; margin: 0 0 4px 0; }
 .summary ul { margin: 0; padding-left: 16px; }
 .warnings { color: #b00; margin-top: 4px; }
-.legend { margin-top: 8px; font-size: 11px; }
-.legend strong { display: block; margin-bottom: 2px; }
-.legend ul { margin: 0; padding-left: 16px; }
 @media print {
   .print-controls { display: none; }
 }

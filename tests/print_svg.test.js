@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { newProject, newNode, newSegment, newHangPoint, newMotor, newFixtureType, newFixture } from "../src/model/defaults.js";
-import { renderPrintSvg, fixtureTypeLetter } from "../src/export/print_svg.js";
+import { renderPrintSvg } from "../src/export/print_svg.js";
 
 const EMPTY_REPORT = {
   pointLoads: [],
@@ -38,17 +38,7 @@ test("renderPrintSvg labels segment length in meters", () => {
   assert.match(svg, /5\.0\s*м/);
 });
 
-test("renderPrintSvg draws a circle for each node", () => {
-  const p = newProject("t");
-  const n1 = newNode({ x: 0, y: 0 });
-  const n2 = newNode({ x: 5, y: 0 });
-  p.grid.nodes.push(n1, n2);
-  const svg = renderPrintSvg(p, EMPTY_REPORT);
-  const circles = svg.match(/<circle\b/g) ?? [];
-  assert.equal(circles.length, 2);
-});
-
-test("renderPrintSvg draws numbered squares for hang points", () => {
+test("renderPrintSvg draws hang point with number and load label", () => {
   const p = newProject("t");
   const n1 = newNode({ x: 0, y: 0 });
   p.grid.nodes.push(n1);
@@ -60,11 +50,12 @@ test("renderPrintSvg draws numbered squares for hang points", () => {
     warnings: [], isolatedSegmentIds: []
   };
   const svg = renderPrintSvg(p, report);
-  assert.match(svg, /<rect\b/);
   assert.match(svg, />1<\/text>/);
+  assert.match(svg, />100\s*кг<\/text>/);
+  assert.match(svg, />worst\s*200<\/text>/);
 });
 
-test("renderPrintSvg marks overloaded hang point with red stroke", () => {
+test("renderPrintSvg colors overloaded hang point red", () => {
   const p = newProject("t");
   const n1 = newNode({ x: 0, y: 0 });
   p.grid.nodes.push(n1);
@@ -76,31 +67,10 @@ test("renderPrintSvg marks overloaded hang point with red stroke", () => {
     warnings: [], isolatedSegmentIds: []
   };
   const svg = renderPrintSvg(p, report);
-  assert.match(svg, /stroke="#c00"/);
+  assert.match(svg, /fill="#e74c3c"/);
 });
 
-test("renderPrintSvg marks warn hang point with dashed stroke", () => {
-  const p = newProject("t");
-  const n1 = newNode({ x: 0, y: 0 });
-  p.grid.nodes.push(n1);
-  const hp = newHangPoint({ kind: "node", nodeId: n1.id }, 100);
-  p.grid.hangPoints.push(hp);
-  const report = {
-    pointLoads: [{ hangPointId: hp.id, lever: 60, worstCase: 80, maxLoad: 100, ratio: 0.8, status: "warn" }],
-    totals: { totalWeight: 60, trussWeight: 0, fixturesWeight: 0, motorsWeight: 0 },
-    warnings: [], isolatedSegmentIds: []
-  };
-  const svg = renderPrintSvg(p, report);
-  assert.match(svg, /stroke-dasharray=/);
-});
-
-test("fixtureTypeLetter returns uppercase first character of type name", () => {
-  assert.equal(fixtureTypeLetter("PAR64"), "P");
-  assert.equal(fixtureTypeLetter("движок"), "Д");
-  assert.equal(fixtureTypeLetter(""), "?");
-});
-
-test("renderPrintSvg draws motor marker near its hang point", () => {
+test("renderPrintSvg draws motor badge with weight near its hang point", () => {
   const p = newProject("t");
   const n1 = newNode({ x: 0, y: 0 });
   p.grid.nodes.push(n1);
@@ -113,10 +83,11 @@ test("renderPrintSvg draws motor marker near its hang point", () => {
     warnings: [], isolatedSegmentIds: []
   };
   const svg = renderPrintSvg(p, report);
-  assert.match(svg, />M<\/text>/);
+  assert.match(svg, />⚙<\/text>/);
+  assert.match(svg, />50<\/text>/);
 });
 
-test("renderPrintSvg draws fixture with type letter", () => {
+test("renderPrintSvg draws fixture with full name and weight label", () => {
   const p = newProject("t");
   const n1 = newNode({ x: 0, y: 0 });
   const n2 = newNode({ x: 10, y: 0 });
@@ -127,5 +98,5 @@ test("renderPrintSvg draws fixture with type letter", () => {
   p.grid.fixtureTypes.push(ft);
   p.grid.fixtures.push(newFixture(ft.id, seg.id, 5));
   const svg = renderPrintSvg(p, EMPTY_REPORT);
-  assert.match(svg, />P<\/text>/);
+  assert.match(svg, />PAR64\s+3кг<\/text>/);
 });

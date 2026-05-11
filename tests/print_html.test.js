@@ -92,16 +92,6 @@ test("renderPrintHtml prints warnings when present", () => {
   assert.match(html, /Внимание: что-то не так/);
 });
 
-test("renderPrintHtml renders fixture legend with letters and weights", () => {
-  const p = basicProject();
-  const ft = newFixtureType("PAR64", 3);
-  p.grid.fixtureTypes.push(ft);
-  p.grid.fixtures.push(newFixture(ft.id, p.grid.segments[0].id, 2));
-  const html = renderPrintHtml(p, EMPTY_REPORT);
-  assert.match(html, /P\s*—\s*PAR64/);
-  assert.match(html, /3\s*кг/);
-});
-
 test("renderPrintHtml includes a print button on screen", () => {
   const html = renderPrintHtml(basicProject(), EMPTY_REPORT);
   assert.match(html, /<button[^>]*class="print-controls"/);

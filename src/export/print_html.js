@@ -1,5 +1,5 @@
 import { anchorPosition } from "../physics/geometry.js";
-import { renderPrintSvg, fixtureTypeLetter } from "./print_svg.js";
+import { renderPrintSvg } from "./print_svg.js";
 import { PRINT_STYLES } from "./print_styles.js";
 
 export function escapeHtml(value) {
@@ -93,20 +93,6 @@ function renderSummary(project, report) {
 </section>`;
 }
 
-function renderLegend(project) {
-  const types = project.grid.fixtureTypes.filter(t =>
-    project.grid.fixtures.some(fx => fx.typeId === t.id));
-  if (types.length === 0) return "";
-  const items = types.map(t =>
-    `<li>${escapeHtml(fixtureTypeLetter(t.name))} — ${escapeHtml(t.name)} (${fmtKg(t.weight)} кг)</li>`
-  ).join("");
-  return `
-<section class="legend">
-  <strong>Приборы</strong>
-  <ul>${items}</ul>
-</section>`;
-}
-
 export function renderPrintHtml(project, report) {
   const title = escapeHtml(project.name) + " — план подвеса";
   return `<!DOCTYPE html>
@@ -122,7 +108,7 @@ ${renderHeader(project, report)}
 ${renderPrintSvg(project, report)}
 <div class="report-tables">
   <div>${renderTable(project, report)}</div>
-  <div>${renderSummary(project, report)}${renderLegend(project)}</div>
+  <div>${renderSummary(project, report)}</div>
 </div>
 </body>
 </html>`;
