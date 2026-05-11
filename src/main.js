@@ -134,7 +134,7 @@ function render() {
       }));
     }
   );
-  renderToolbar(toolbarHost, { project, view, totals: report.totals }, {
+  renderToolbar(toolbarHost, { project, view, report }, {
     onNew:   () => store.replace({ project: newProject("Без названия"), tool: { kind: "select" }, selection: null }),
     onLoad:  (p) => store.replace({ project: { ...p, grid: repairGrid(p.grid) }, tool: { kind: "select" }, selection: null }),
     onUndo:  () => store.undo(),

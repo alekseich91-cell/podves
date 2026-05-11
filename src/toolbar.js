@@ -1,4 +1,5 @@
 import { exportProjectJson, importProjectJson } from "./persistence.js";
+import { openPrintView } from "./export/print.js";
 
 function button(label, onClick) {
   const b = document.createElement("button");
@@ -52,11 +53,12 @@ export function renderToolbar(host, ctx, cb) {
   host.appendChild(button("↶ Отменить", cb.onUndo));
   host.appendChild(button("↷ Вернуть", cb.onRedo));
   host.appendChild(button(`Snap: ${ctx.view.snap ? "вкл" : "выкл"}`, cb.onToggleSnap));
+  host.appendChild(button("Экспорт PDF", () => openPrintView(ctx.project, ctx.report)));
 
   const total = document.createElement("div");
   total.style.cssText = "margin-left:auto;font-size:14px;";
   const l = document.createElement("span"); l.textContent = "Итого: ";
-  const v = document.createElement("b"); v.textContent = `${Math.round(ctx.totals.totalWeight)} кг`;
+  const v = document.createElement("b"); v.textContent = `${Math.round(ctx.report.totals.totalWeight)} кг`;
   total.appendChild(l); total.appendChild(v);
   host.appendChild(total);
 
